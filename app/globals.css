@@ -1,0 +1,551 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f8fb;
+  --foreground: #172033;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.app-shell {
+  background:
+    linear-gradient(135deg, rgba(235, 245, 255, 0.98), rgba(224, 252, 250, 0.85)),
+    #eef7ff;
+}
+
+.app-header {
+  background: #f0f8ff !important;
+  border-bottom: 1px solid #dce8f5;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.app-content {
+  padding-top: 104px;
+}
+
+.app-header-row {
+  align-items: center;
+  display: flex;
+  height: 72px;
+  justify-content: space-between;
+  line-height: normal;
+  padding: 0 24px;
+}
+
+.app-header-brand {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-header-nav {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+}
+
+.header-icon-button.ant-btn {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.notification-popover {
+  width: 320px;
+}
+
+.notification-popover-header {
+  align-items: center;
+  border-bottom: 1px solid #eef2f7;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-top: 6px;
+}
+
+.notification-error {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #9a3412;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.notification-item {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  padding: 10px 4px;
+  text-align: left;
+}
+
+.notification-item:hover {
+  background: #f8fbff;
+}
+
+.notification-item.unread .notification-item-title::before {
+  background: #ef4444;
+  border-radius: 999px;
+  content: "";
+  display: inline-block;
+  height: 7px;
+  margin-right: 8px;
+  width: 7px;
+}
+
+.notification-item-title {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notification-item-body,
+.notification-item-time {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.brand-mark {
+  align-items: center;
+  background: linear-gradient(135deg, #3f73ff, #6f93ff);
+  border: 1px solid #7da0ff;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.brand-mark-lg {
+  border-radius: 999px;
+  font-size: 24px;
+  height: 64px;
+  width: 64px;
+}
+
+.header-brand-mark {
+  border-radius: 999px;
+  flex: 0 0 40px;
+  font-size: 18px;
+  height: 40px;
+  width: 40px;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    position: sticky;
+  }
+
+  .app-content {
+    padding-top: 24px;
+  }
+
+  .app-header-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    height: auto;
+    padding: 18px 20px;
+  }
+
+  .app-header-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  border-radius: 24px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  min-height: 132px;
+  overflow: hidden;
+}
+
+.metric-card .ant-card-body {
+  padding: 20px 24px;
+}
+
+.metric-card-primary {
+  background: linear-gradient(135deg, #3f73ff, #6f93ff);
+  border-color: #7da0ff;
+}
+
+.metric-label {
+  color: #64748b;
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  color: #0f172a !important;
+  font-size: 34px !important;
+  line-height: 1 !important;
+  margin: 10px 0 5px !important;
+}
+
+.metric-subtitle {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metric-subtitle-warning {
+  color: #b45309;
+}
+
+.metric-subtitle-success {
+  color: #047857;
+}
+
+.dashboard-hero-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.dashboard-hero-card .ant-card-body {
+  padding: 0;
+}
+
+.need-review-header {
+  align-items: center;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 24px 32px 8px;
+}
+
+.need-review-toolbar {
+  align-items: center;
+  border-bottom: 1px solid #e6eaf2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 0 32px 24px;
+}
+
+.need-review-search {
+  width: 320px;
+}
+
+.count-pill {
+  border-radius: 999px;
+  margin: 0;
+  padding: 7px 14px;
+}
+
+.need-review-table .ant-table {
+  border-radius: 0;
+}
+
+.need-review-table .ant-table-thead > tr > th {
+  border-top: 0;
+}
+
+.need-review-table .ant-table-tbody > tr > td {
+  padding: 20px 24px;
+}
+
+.page-card {
+  border: 1px solid #e6eaf2;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.page-card .ant-card-head {
+  border-bottom-color: #eef2f7;
+  min-height: 72px;
+}
+
+.card-title-back-button.ant-btn {
+  align-items: center;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+}
+
+.checklist-detail-card .ant-card-head {
+  align-items: center;
+  padding: 18px 32px;
+}
+
+.checklist-detail-card .ant-card-head-title,
+.checklist-detail-card .ant-card-extra {
+  padding: 0;
+}
+
+.checklist-detail-card .ant-typography {
+  margin-bottom: 0;
+}
+
+.member-report-card .ant-card-head {
+  padding: 18px 32px;
+}
+
+.member-report-card .ant-card-head-title,
+.member-report-card .ant-card-extra {
+  padding: 0;
+}
+
+.member-report-month-filter {
+  max-width: 360px;
+  width: 100%;
+}
+
+.checklist-items-label {
+  align-items: center;
+  color: #172033;
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+  line-height: 1;
+}
+
+.checklist-item-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.checklist-item-row .ant-form-item {
+  min-width: 0;
+}
+
+.checklist-form-actions {
+  margin-top: 16px;
+  padding-bottom: 8px;
+}
+
+.checklist-detail-items {
+  border: 1px solid #e6eaf2;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.checklist-detail-items-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e6eaf2;
+  padding: 12px 16px;
+}
+
+.checklist-detail-item {
+  align-items: center;
+  border-bottom: 1px solid #eef2f7;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.checklist-detail-item:last-child {
+  border-bottom: 0;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.comment-item {
+  border-bottom: 1px solid #eef2f7;
+  padding: 14px 0;
+}
+
+.comment-item:first-child {
+  padding-top: 0;
+}
+
+.comment-item:last-child {
+  border-bottom: 0;
+}
+
+.app-table .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #5b6475;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.app-table .ant-table-tbody > tr > td {
+  border-bottom-color: #eef2f7;
+}
+
+.app-table .ant-table-tbody > tr:hover > td {
+  background: #f8fbff;
+}
+
+.app-table .ant-pagination {
+  padding-inline: 24px;
+}
+
+.icon-only-action-button.ant-btn {
+  border: 0;
+  box-shadow: none;
+}
+
+.icon-only-action-button.ant-btn:hover,
+.icon-only-action-button.ant-btn:focus {
+  background: #eef4ff;
+}
+
+.muted-panel {
+  background: #f8fafc;
+  border: 1px solid #e6eaf2;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.overdue-checklist-table .ant-table-tbody > tr > td {
+  background: #fffaf4;
+  padding-bottom: 18px;
+  padding-top: 18px;
+}
+
+.overdue-checklist-table .ant-table-tbody > tr:hover > td {
+  background: #fff7ed;
+}
+
+.overdue-card-title {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+  line-height: 1;
+}
+
+.overdue-title-icon {
+  align-items: center;
+  color: #f97316;
+  display: inline-flex;
+  font-size: 22px;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.overdue-card-title-text {
+  color: #0f172a;
+  display: inline-flex;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.overdue-scope-tag.ant-tag {
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 4px;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.overdue-days-pill {
+  align-items: center;
+  background: #fff7e6;
+  border-radius: 999px;
+  color: #b45309;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 7px;
+  line-height: 1;
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+
+.overdue-days-pill.danger {
+  background: #ffe8e8;
+  color: #ff4d4f;
+}
+
+.overdue-days-dot {
+  background: currentColor;
+  border-radius: 999px;
+  height: 6px;
+  width: 6px;
+}
+
+.overdue-progress-cell {
+  min-width: 220px;
+}
+
+.overdue-progress-meta {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .need-review-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 20px 24px 8px;
+  }
+
+  .need-review-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0 24px 20px;
+  }
+
+  .need-review-search {
+    width: 100%;
+  }
+
+  .member-report-month-filter {
+    max-width: 100%;
+  }
+}
