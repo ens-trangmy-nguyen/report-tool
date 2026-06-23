@@ -29,11 +29,11 @@ import { AppBackButton } from "@/components/AppBackButton";
 import { ReportForm, type ReportFormValues } from "@/components/ReportForm";
 import { getCurrentProfile, canViewTeam } from "@/lib/auth-client";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/date-format";
+import { createReportLog, deleteReportLog, fetchReports } from "@/lib/report-api";
 import {
   canManageReport,
   encodeMemberId,
   memberSelect,
-  reportSelect,
   tablePagination,
 } from "@/lib/report-helpers";
 import { supabase } from "@/lib/supabase";
@@ -74,22 +74,16 @@ export default function MemberReportsPage() {
       return;
     }
 
-    const [{ data: memberData, error: memberError }, { data: reportData, error: reportError }] =
+    const [{ data: memberData, error: memberError }, reportResult] =
       await Promise.all([
         supabase.from("whitelist_users").select(memberSelect).eq("email", memberEmail).maybeSingle(),
-        supabase
-          .from("report_logs")
-          .select(reportSelect)
-          .eq("member_email", memberEmail)
-          .order("date", { ascending: false })
-          .order("created_at", { ascending: false }),
+        fetchReports({ memberEmail }),
       ]);
 
     if (memberError) setError(memberError.message);
-    if (reportError) setError(reportError.message);
 
     setMember((memberData ?? null) as WhitelistUser | null);
-    setReports((reportData ?? []) as ReportLog[]);
+    setReports(reportResult);
     setLoading(false);
   }, [memberEmail]);
 
@@ -180,7 +174,8 @@ export default function MemberReportsPage() {
     setCreateReportLoading(true);
     setError(null);
 
-    const { error: insertError } = await supabase.from("report_logs").insert({
+    try {
+      await createReportLog({
       blocker: values.blocker || null,
       content: values.content,
       created_by: currentUser.email,
@@ -189,15 +184,14 @@ export default function MemberReportsPage() {
       follow_up: values.follow_up || null,
       member_email: memberEmail,
       output: values.output || null,
-    });
-
-    setCreateReportLoading(false);
-
-    if (insertError) {
-      setError(insertError.message);
+      });
+    } catch (insertError) {
+      setCreateReportLoading(false);
+      setError(insertError instanceof Error ? insertError.message : "Cannot create report.");
       return;
     }
 
+    setCreateReportLoading(false);
     closeCreateReportModal();
     await loadData();
   }
@@ -205,13 +199,10 @@ export default function MemberReportsPage() {
   async function deleteReport(reportId: string) {
     setError(null);
 
-    const { error: deleteError } = await supabase
-      .from("report_logs")
-      .delete()
-      .eq("id", reportId);
-
-    if (deleteError) {
-      setError(deleteError.message);
+    try {
+      await deleteReportLog(reportId);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Cannot delete report.");
       return;
     }
 

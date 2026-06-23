@@ -10,11 +10,11 @@ import { ReportComments } from "@/components/ReportComments";
 import { ReportDetailCard } from "@/components/ReportDetailCard";
 import { ReportForm, type ReportFormValues } from "@/components/ReportForm";
 import { canViewTeam, getCurrentProfile } from "@/lib/auth-client";
+import { fetchReport, updateReportLog } from "@/lib/report-api";
 import {
   canManageReport,
   encodeMemberId,
   memberSelect,
-  reportSelect,
 } from "@/lib/report-helpers";
 import { supabase } from "@/lib/supabase";
 import type { ReportLog, WhitelistUser } from "@/lib/types";
@@ -54,26 +54,18 @@ export default function MemberReportDetailPage() {
       return;
     }
 
-    const [{ data: memberData }, { data: reportData, error: reportError }] =
+    const [{ data: memberData }, reportData] =
       await Promise.all([
         supabase
           .from("whitelist_users")
           .select(memberSelect)
           .eq("email", memberEmail)
           .maybeSingle(),
-        supabase
-          .from("report_logs")
-          .select(reportSelect)
-          .eq("id", reportId)
-          .eq("member_email", memberEmail)
-          .maybeSingle(),
+        fetchReport(reportId, { memberEmail }),
       ]);
 
-    if (reportError) setError(reportError.message);
-
-    const nextReport = (reportData ?? null) as ReportLog | null;
     setMember((memberData ?? null) as WhitelistUser | null);
-    setReport(nextReport);
+    setReport(reportData);
 
     setLoading(false);
   }, [memberEmail, reportId]);
@@ -108,26 +100,22 @@ export default function MemberReportDetailPage() {
     setSaving(true);
     setError(null);
 
-    const { error: updateError } = await supabase
-      .from("report_logs")
-      .update({
+    try {
+      await updateReportLog(report.id, {
         blocker: values.blocker || null,
         content: values.content,
         date: values.date.format("YYYY-MM-DD"),
         evidence_link: values.evidence_link || null,
         follow_up: values.follow_up || null,
         output: values.output || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", report.id);
-
-    setSaving(false);
-
-    if (updateError) {
-      setError(updateError.message);
+      });
+    } catch (updateError) {
+      setSaving(false);
+      setError(updateError instanceof Error ? updateError.message : "Cannot update report.");
       return;
     }
 
+    setSaving(false);
     setEditing(false);
     await loadData();
   }

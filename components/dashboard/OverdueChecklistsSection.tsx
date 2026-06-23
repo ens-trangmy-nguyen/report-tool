@@ -34,6 +34,7 @@ type OverdueRow = Checklist & {
 
 type Props = {
   currentUser: WhitelistUser;
+  hideWhenEmpty?: boolean;
   onCountChange?: (count: number) => void;
 };
 
@@ -59,6 +60,7 @@ function getIncompleteCount(row: OverdueRow) {
 
 export function OverdueChecklistsSection({
   currentUser,
+  hideWhenEmpty = true,
   onCountChange,
 }: Props) {
   const [rows, setRows] = useState<OverdueRow[]>([]);
@@ -305,7 +307,7 @@ export function OverdueChecklistsSection({
     [currentUser.email, isTeam],
   );
 
-  if (!loading && !rows.length) return null;
+  if (!loading && !rows.length && hideWhenEmpty) return null;
 
   return (
     <Card

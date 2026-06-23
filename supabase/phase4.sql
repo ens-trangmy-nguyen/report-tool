@@ -59,11 +59,9 @@ using (author_email = auth.jwt() ->> 'email')
 with check (author_email = auth.jwt() ->> 'email');
 
 drop policy if exists "Authors and leaders can delete comments" on report_comments;
-create policy "Authors and leaders can delete comments"
+drop policy if exists "Authors can delete own comments" on report_comments;
+create policy "Authors can delete own comments"
 on report_comments
 for delete
 to authenticated
-using (
-  author_email = auth.jwt() ->> 'email'
-  or public.current_app_role() = 'Leader'
-);
+using (author_email = auth.jwt() ->> 'email');

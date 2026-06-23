@@ -64,6 +64,13 @@ phase5-notifications.sql
     body text | link_url text | read_at timestamptz | created_at
   Index: (recipient_email, created_at DESC)
 
+Report encryption
+  report_logs.content, output, blocker, follow_up are encrypted server-side
+  before insert/update and decrypted server-side before returning to UI.
+  evidence_link is intentionally stored as plaintext.
+  Required server env var: ENCRYPTION_KEY.
+  Existing plaintext reports remain readable; new/updated reports use enc:v1 payloads.
+
 --------------------------------------------------------------------------------
 RLS POLICY MATRIX
 --------------------------------------------------------------------------------
@@ -209,6 +216,17 @@ lib/date-format.ts
   formatDisplayDate(value) → 'DD-MM-YYYY'
   formatDisplayDateTime(value) → 'HH:mm DD-MM-YYYY'
 
+lib/report-encryption.ts
+  Server-only AES-256-GCM helpers for report field encryption/decryption.
+
+lib/report-api.ts
+  Client helper for authenticated report API calls. Sends Supabase access token
+  to server route handlers.
+
+app/api/reports/*
+  Authenticated report API route handlers. Enforce Supabase RLS using the
+  caller's bearer token, encrypt writes, decrypt reads.
+
 lib/types.ts
   WhitelistUser, ReportLog, ReportLogSummary, ChecklistScope, Checklist,
   ChecklistItem, ChecklistAssignment, ChecklistItemCompletion,
@@ -272,5 +290,6 @@ DEPLOYMENT
   Required env vars:
     NEXT_PUBLIC_SUPABASE_URL
     NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ENCRYPTION_KEY
 
   Google OAuth redirect URL: <origin>/auth/callback

@@ -61,6 +61,14 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 
 ## Reports / Logs
 
+### Report Field Encryption
+
+- Report text fields are encrypted server-side before saving to Supabase.
+- Encrypted fields: `content`, `output`, `blocker`, `follow_up`.
+- Not encrypted: `evidence_link`, `date`, `member_email`, `created_by`, timestamps.
+- The encryption key is stored only in the server environment variable `ENCRYPTION_KEY`.
+- Existing plaintext reports are still readable; newly created/updated reports are saved encrypted.
+
 ### Leader/Admin Reports (`/reports`)
 
 - Filterable by month and by member (select).

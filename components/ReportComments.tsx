@@ -210,9 +210,7 @@ export function ReportComments({ currentUser, report, reportId }: ReportComments
   }
 
   function canDeleteComment(comment: ReportComment) {
-    return (
-      comment.author_email === currentUser.email || currentUser.role === "Leader"
-    );
+    return comment.author_email === currentUser.email;
   }
 
   return (

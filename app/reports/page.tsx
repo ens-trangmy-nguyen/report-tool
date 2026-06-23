@@ -1,12 +1,13 @@
 "use client";
 
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
   Card,
   DatePicker,
   Empty,
+  Form,
   Select,
   Space,
   Spin,
@@ -15,15 +16,20 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import {
+  CreateReportModal,
+  type DashboardReportFormValues,
+} from "@/components/dashboard/CreateReportModal";
 import { canViewTeam, getCurrentProfile } from "@/lib/auth-client";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/date-format";
+import { createReportLog, fetchReports } from "@/lib/report-api";
 import {
   encodeMemberId,
   memberSelect,
-  reportSelect,
   tablePagination,
 } from "@/lib/report-helpers";
 import { supabase } from "@/lib/supabase";
@@ -38,7 +44,10 @@ export default function ReportsPage() {
   const [selectedMemberEmail, setSelectedMemberEmail] = useState<string>();
   const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null);
   const [loading, setLoading] = useState(true);
+  const [createReportOpen, setCreateReportOpen] = useState(false);
+  const [createReportLoading, setCreateReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [form] = Form.useForm<DashboardReportFormValues>();
 
   const loadData = useCallback(async () => {
     await Promise.resolve();
@@ -54,29 +63,22 @@ export default function ReportsPage() {
       return;
     }
 
-    let reportQuery = supabase
-      .from("report_logs")
-      .select(reportSelect)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    if (!canViewTeam(profileResult.profile.role)) {
-      reportQuery = reportQuery.eq("member_email", profileResult.profile.email);
-    }
-
-    const [{ data: reportData, error: reportError }, { data: memberData }] =
+    const [{ data: memberData }, reportResult] =
       await Promise.all([
-        reportQuery,
         canViewTeam(profileResult.profile.role)
           ? supabase
               .from("whitelist_users")
               .select(memberSelect)
               .order("name", { ascending: true })
           : Promise.resolve({ data: [] }),
+        fetchReports(
+          canViewTeam(profileResult.profile.role)
+            ? undefined
+            : { memberEmail: profileResult.profile.email },
+        ),
       ]);
 
-    if (reportError) setError(reportError.message);
-    setReports((reportData ?? []) as ReportLog[]);
+    setReports(reportResult);
     setMembers((memberData ?? []) as WhitelistUser[]);
     setLoading(false);
   }, []);
@@ -98,6 +100,54 @@ export default function ReportsPage() {
       return matchesMember && matchesMonth;
     });
   }, [reports, selectedMemberEmail, selectedMonth]);
+
+  const activeMembers = useMemo(
+    () => members.filter((member) => member.status === "Active"),
+    [members],
+  );
+
+  function openCreateReport() {
+    setError(null);
+    form.setFieldsValue({
+      date: dayjs(),
+      member_email: selectedMemberEmail,
+    });
+    setCreateReportOpen(true);
+  }
+
+  function closeCreateReportModal() {
+    if (createReportLoading) return;
+    form.resetFields();
+    setError(null);
+    setCreateReportOpen(false);
+  }
+
+  async function createReport(values: DashboardReportFormValues) {
+    if (!currentUser || currentUser.role !== "Leader") return;
+
+    setError(null);
+    setCreateReportLoading(true);
+    try {
+      await createReportLog({
+      blocker: values.blocker || null,
+      content: values.content,
+      created_by: currentUser.email,
+      date: values.date.format("YYYY-MM-DD"),
+      evidence_link: values.evidence_link || null,
+      follow_up: values.follow_up || null,
+      member_email: values.member_email,
+      output: values.output || null,
+      });
+    } catch (insertError) {
+      setError(insertError instanceof Error ? insertError.message : "Cannot create report.");
+      setCreateReportLoading(false);
+      return;
+    }
+
+    setCreateReportLoading(false);
+    closeCreateReportModal();
+    await loadData();
+  }
 
   const columns: ColumnsType<ReportLog> = [
     {
@@ -180,6 +230,17 @@ export default function ReportsPage() {
           {error ? <Alert type="warning" title={error} showIcon /> : null}
           <Card
             className="page-card"
+            extra={
+              currentUser?.role === "Leader" ? (
+                <Button
+                  icon={<PlusOutlined />}
+                  type="primary"
+                  onClick={openCreateReport}
+                >
+                  New report
+                </Button>
+              ) : null
+            }
             title={
               <Space orientation="vertical" size={2}>
                 <Title level={3} className="mb-0 text-slate-950">
@@ -231,6 +292,15 @@ export default function ReportsPage() {
           </Card>
         </Space>
       )}
+
+      <CreateReportModal
+        activeMembers={activeMembers}
+        form={form}
+        loading={createReportLoading}
+        onCancel={closeCreateReportModal}
+        onCreate={createReport}
+        open={createReportOpen}
+      />
     </AppShell>
   );
 }

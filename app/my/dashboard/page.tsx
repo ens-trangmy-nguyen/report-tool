@@ -104,6 +104,7 @@ export default function MyDashboardPage() {
           {currentUser ? (
             <OverdueChecklistsSection
               currentUser={currentUser}
+              hideWhenEmpty={false}
               onCountChange={setOverdueChecklistsCount}
             />
           ) : null}

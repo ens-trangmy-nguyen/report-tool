@@ -9,8 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentProfile } from "@/lib/auth-client";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/date-format";
-import { reportSelect, tablePagination } from "@/lib/report-helpers";
-import { supabase } from "@/lib/supabase";
+import { fetchReports } from "@/lib/report-api";
+import { tablePagination } from "@/lib/report-helpers";
 import type { ReportLog, WhitelistUser } from "@/lib/types";
 
 const { Text, Title } = Typography;
@@ -36,15 +36,12 @@ export default function MyReportsPage() {
       return;
     }
 
-    const { data, error: reportsError } = await supabase
-      .from("report_logs")
-      .select(reportSelect)
-      .eq("member_email", profileResult.profile.email)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    if (reportsError) setError(reportsError.message);
-    setReports((data ?? []) as ReportLog[]);
+    try {
+      setReports(await fetchReports({ memberEmail: profileResult.profile.email }));
+    } catch (reportsError) {
+      setError(reportsError instanceof Error ? reportsError.message : "Cannot load reports.");
+      setReports([]);
+    }
     setLoading(false);
   }, []);
 

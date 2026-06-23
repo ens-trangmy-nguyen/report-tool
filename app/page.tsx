@@ -15,7 +15,8 @@ import { LoginCard } from "@/components/dashboard/LoginCard";
 import { NeedReviewSection } from "@/components/dashboard/NeedReviewSection";
 import { OverdueChecklistsSection } from "@/components/dashboard/OverdueChecklistsSection";
 import { canViewTeam } from "@/lib/auth-client";
-import { memberSelect, reportSelect } from "@/lib/report-helpers";
+import { createReportLog, fetchReports } from "@/lib/report-api";
+import { memberSelect } from "@/lib/report-helpers";
 import { supabase } from "@/lib/supabase";
 import type { ReportLog, UserRole, WhitelistUser } from "@/lib/types";
 
@@ -48,25 +49,18 @@ export default function Dashboard() {
     async (role: UserRole, userEmail: string) => {
       setReportsLoading(true);
 
-      let query = supabase
-        .from("report_logs")
-        .select(reportSelect)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (!canViewTeam(role)) {
-        query = query.eq("member_email", userEmail);
-      }
-
-      const { data, error: reportsError } = await query;
-
-      if (reportsError) {
+      try {
+        const data = await fetchReports(
+          canViewTeam(role) ? undefined : { memberEmail: userEmail },
+        );
+        setReportLogs(data);
+      } catch (reportsError) {
         setError(
-          `Cannot load report logs for Need Review. Run report-tool/supabase/phase2.sql in Supabase if the table/policies are missing. ${reportsError.message}`,
+          `Cannot load report logs for Need Review. Run report-tool/supabase/phase2.sql in Supabase if the table/policies are missing. ${
+            reportsError instanceof Error ? reportsError.message : "Unknown error"
+          }`,
         );
         setReportLogs([]);
-      } else {
-        setReportLogs((data ?? []) as ReportLog[]);
       }
 
       setReportsLoading(false);
@@ -244,7 +238,8 @@ export default function Dashboard() {
 
     setError(null);
     setCreateReportLoading(true);
-    const { error: insertError } = await supabase.from("report_logs").insert({
+    try {
+      await createReportLog({
       blocker: values.blocker || null,
       content: values.content,
       created_by: currentUser.email,
@@ -253,10 +248,9 @@ export default function Dashboard() {
       follow_up: values.follow_up || null,
       member_email: values.member_email,
       output: values.output || null,
-    });
-
-    if (insertError) {
-      setError(insertError.message);
+      });
+    } catch (insertError) {
+      setError(insertError instanceof Error ? insertError.message : "Cannot create report.");
       setCreateReportLoading(false);
       return;
     }

@@ -7,8 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { ReportComments } from "@/components/ReportComments";
 import { ReportDetailCard } from "@/components/ReportDetailCard";
 import { getCurrentProfile } from "@/lib/auth-client";
-import { reportSelect } from "@/lib/report-helpers";
-import { supabase } from "@/lib/supabase";
+import { fetchReport } from "@/lib/report-api";
 import type { ReportLog, WhitelistUser } from "@/lib/types";
 
 export default function MyReportDetailPage() {
@@ -32,15 +31,12 @@ export default function MyReportDetailPage() {
       return;
     }
 
-    const { data, error: reportError } = await supabase
-      .from("report_logs")
-      .select(reportSelect)
-      .eq("id", params.reportId)
-      .eq("member_email", profileResult.profile.email)
-      .maybeSingle();
-
-    if (reportError) setError(reportError.message);
-    setReport((data ?? null) as ReportLog | null);
+    try {
+      setReport(await fetchReport(params.reportId, { memberEmail: profileResult.profile.email }));
+    } catch (reportError) {
+      setError(reportError instanceof Error ? reportError.message : "Cannot load report.");
+      setReport(null);
+    }
     setLoading(false);
   }, [params.reportId]);
 
