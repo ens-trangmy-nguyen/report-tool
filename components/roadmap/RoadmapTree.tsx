@@ -15,10 +15,10 @@ import {
   type Edge,
   type Node,
   type NodeChange,
-  type NodeDragHandler,
+  type OnNodeDrag,
 } from "@xyflow/react";
 import { Button, Empty, Popconfirm } from "antd";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RoadmapNode } from "@/lib/types";
 
 type Props = {
@@ -64,7 +64,7 @@ function fallbackPosition(
   node: RoadmapNode,
   grouped: Map<string | null, RoadmapNode[]>,
   nodeMap: Map<string, RoadmapNode>,
-) {
+): { x: number; y: number } {
   if (node.position_x !== null && node.position_y !== null) {
     return { x: node.position_x, y: node.position_y };
   }
@@ -107,20 +107,18 @@ export function RoadmapTree({
 }: Props) {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [handledEditingNodeId, setHandledEditingNodeId] = useState<string | null>(null);
-  const [titleDraft, setTitleDraft] = useState("");
+  const skipNextBlurSaveRef = useRef(false);
 
   const startTitleEdit = useCallback((node: RoadmapNode) => {
     setEditingTitleId(node.id);
-    setTitleDraft(node.title);
   }, []);
 
   const cancelTitleEdit = useCallback(() => {
     setEditingTitleId(null);
-    setTitleDraft("");
   }, []);
 
-  const saveTitleEdit = useCallback((node: RoadmapNode) => {
-    const nextTitle = titleDraft.trim();
+  const saveTitleEdit = useCallback((node: RoadmapNode, rawTitle: string) => {
+    const nextTitle = rawTitle.trim();
     if (!nextTitle || nextTitle === node.title) {
       cancelTitleEdit();
       return;
@@ -128,7 +126,7 @@ export function RoadmapTree({
 
     onTitleChange(node.id, nextTitle);
     cancelTitleEdit();
-  }, [cancelTitleEdit, onTitleChange, titleDraft]);
+  }, [cancelTitleEdit, onTitleChange]);
 
   useEffect(() => {
     if (
@@ -174,13 +172,23 @@ export function RoadmapTree({
               <input
                 autoFocus
                 className="roadmap-flow-title-input nodrag nopan"
-                value={titleDraft}
-                onBlur={() => saveTitleEdit(node)}
-                onChange={(event) => setTitleDraft(event.target.value)}
+                defaultValue={node.title}
+                onBlur={(event) => {
+                  if (skipNextBlurSaveRef.current) {
+                    skipNextBlurSaveRef.current = false;
+                    return;
+                  }
+                  saveTitleEdit(node, event.currentTarget.value);
+                }}
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") saveTitleEdit(node);
-                  if (event.key === "Escape") cancelTitleEdit();
+                  if (event.key === "Enter") {
+                    saveTitleEdit(node, event.currentTarget.value);
+                  }
+                  if (event.key === "Escape") {
+                    skipNextBlurSaveRef.current = true;
+                    cancelTitleEdit();
+                  }
                 }}
               />
             ) : (
@@ -285,7 +293,6 @@ export function RoadmapTree({
     saveTitleEdit,
     selectedNodeId,
     startTitleEdit,
-    titleDraft,
   ]);
 
   const [flowNodes, setFlowNodes] = useState<Node[]>(initialFlowNodes);
@@ -301,7 +308,7 @@ export function RoadmapTree({
     setFlowNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
   }, []);
 
-  const handleNodeDragStop: NodeDragHandler = (_, node) => {
+  const handleNodeDragStop: OnNodeDrag = (_, node) => {
     if (!canEdit || !nodeById.has(node.id)) return;
     onPositionChange(node.id, {
       x: Math.round(node.position.x),
