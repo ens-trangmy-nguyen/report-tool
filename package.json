@@ -13,6 +13,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.2.5",
     "@supabase/supabase-js": "^2.108.1",
+    "@xyflow/react": "^12.11.1",
     "antd": "^6.4.3",
     "dayjs": "^1.11.21",
     "next": "16.2.9",

@@ -29,8 +29,8 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 
 ## Navigation (AppShell)
 
-- **Leader/Admin**: Dashboard · Members · Reports · Checklists · Bell · User menu
-- **Member**: My Dashboard · My Reports · My Checklists · Bell · User menu
+- **Leader/Admin**: Dashboard · Members · Reports · Checklists · Roadmap · Bell · User menu
+- **Member**: My Dashboard · My Reports · My Checklists · Roadmap · Bell · User menu
 - Active route is highlighted. Notifications bell shows unread badge count.
 
 ---
@@ -94,7 +94,7 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 - Displayed as a thread below the report detail.
 - **Create**: Leader and the report's own member can post comments.
 - **Edit**: Author only. Shows "(edited)" marker after edit.
-- **Delete**: Author or Leader.
+- **Delete**: Author only.
 - Author name is resolved from `whitelist_users` by email at load time.
 
 ---
@@ -141,6 +141,56 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 
 ---
 
+## Roadmap
+
+### Overview
+
+A shared learning/skill roadmap for the whole FE team, displayed as an interactive mindmap. All active whitelisted users view the same roadmap. Leaders manage the content.
+
+### Roadmap Page (`/roadmap`)
+
+- **Visible to**: all roles (Leader, Admin, Member).
+- Displays all roadmap nodes in an interactive mindmap/canvas layout (parent → children).
+- Supports canvas zoom and pan for all roles.
+- Clicking a node selects it on the canvas.
+- Clicking the detail icon on a node opens a drawer with the node's full detail (description and resource links).
+- Double-clicking a node title starts inline rename for Leaders.
+- Top-level (root) nodes have no parent. Children are ordered by `sort_order`.
+
+### Node Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `title` | text | Required |
+| `description` | text | Optional. Shown in drawer. |
+| `resource_links` | text[] | Optional. List of URLs shown in drawer. |
+| `parent_id` | uuid | Null for root nodes. References `roadmap_nodes.id`. |
+| `sort_order` | integer | Controls display order among siblings. |
+| `position_x` | integer | Canvas x-position. |
+| `position_y` | integer | Canvas y-position. |
+
+### Leader Actions
+
+- **Create**: Add a root node or child node directly on the canvas.
+- **Edit**: Rename node title inline on the canvas. Description/resources are edited in the drawer opened from the node detail icon.
+- **Delete**: Remove a node (cascades to all child nodes).
+- **Move**: Drag nodes on the canvas. Position is saved.
+
+### Admin/Member Actions
+
+- Read-only. Can view the roadmap and open node drawers.
+- Cannot create, edit, or delete nodes.
+
+### Out of Scope (MVP)
+
+- Personal roadmaps or per-member assignment.
+- Drag-and-drop parent reassignment.
+- Progress tracking or completion status.
+- Notifications for roadmap changes.
+- Integration with checklists or reports.
+
+---
+
 ## Permissions Summary
 
 | Action | Leader | Admin | Member |
@@ -154,8 +204,9 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 | Tick checklist items | — | — | ✓ |
 | Post comment | ✓ | — | Own report only |
 | Edit/delete comment | Own only | — | Own only |
-| Delete any comment | ✓ | — | — |
 | Read notifications | Own only | Own only | Own only |
+| View roadmap | ✓ | ✓ | ✓ |
+| Create/edit/delete roadmap node | ✓ | — | — |
 
 ---
 
@@ -168,5 +219,6 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 | `phase3.sql` | `checklists` (with `due_date date not null`), `checklist_items`, `checklist_assignments`, `checklist_item_completions`, RLS, indexes, existing `due_date` backfill |
 | `phase4.sql` | `report_comments`, RLS |
 | `phase5-notifications.sql` | `notifications`, RLS |
+| `phase6-roadmap.sql` | `roadmap_nodes` (with `parent_id`, `sort_order`, `resource_links`), RLS, indexes |
 
 All RLS policies use `public.current_app_role()` which resolves the role from `whitelist_users` via the JWT email claim.

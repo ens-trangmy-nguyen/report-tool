@@ -88,3 +88,17 @@ export type Notification = {
   read_at: string | null;
   created_at: string;
 };
+
+export type RoadmapNode = {
+  id: string;
+  title: string;
+  description: string | null;
+  resource_links: string[] | null;
+  parent_id: string | null;
+  sort_order: number;
+  position_x: number | null;
+  position_y: number | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};

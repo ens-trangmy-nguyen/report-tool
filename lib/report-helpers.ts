@@ -23,6 +23,9 @@ export const reportCommentSelect =
 export const notificationSelect =
   "id,recipient_email,actor_email,type,title,body,link_url,read_at,created_at";
 
+export const roadmapNodeSelect =
+  "id,title,description,resource_links,parent_id,sort_order,position_x,position_y,created_by,created_at,updated_at";
+
 export function canManageReport(role?: UserRole, createdBy?: string, email?: string) {
   return role === "Leader" && Boolean(createdBy) && createdBy === email;
 }

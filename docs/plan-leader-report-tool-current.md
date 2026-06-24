@@ -1,7 +1,7 @@
 ================================================================================
 LEADER REPORT TOOL — CURRENT STATE IMPLEMENTATION PLAN
 ================================================================================
-Last updated: 2026-06-18
+Last updated: 2026-06-23
 
 --------------------------------------------------------------------------------
 TECH STACK
@@ -64,6 +64,15 @@ phase5-notifications.sql
     body text | link_url text | read_at timestamptz | created_at
   Index: (recipient_email, created_at DESC)
 
+phase6-roadmap.sql
+  roadmap_nodes
+    id uuid PK | title text NOT NULL | description text
+    resource_links text[] | parent_id → roadmap_nodes (cascade, nullable)
+    sort_order int NOT NULL DEFAULT 0
+    position_x int | position_y int
+    created_by text | created_at | updated_at
+  Index: (parent_id, sort_order ASC)
+
 Report encryption
   report_logs.content, output, blocker, follow_up are encrypted server-side
   before insert/update and decrypted server-side before returning to UI.
@@ -108,13 +117,17 @@ report_comments
   SELECT: role IN ('Leader','Admin') OR jwt email = report's member_email
   INSERT: author_email = jwt email AND (role='Leader' OR jwt email = report member)
   UPDATE: author_email = jwt email
-  DELETE: author_email = jwt email OR role='Leader'
+  DELETE: author_email = jwt email
 
 notifications
   SELECT: recipient_email = jwt email
   UPDATE (mark read): recipient_email = jwt email
   INSERT: self-insert for checklist_overdue, or report_comment with actor≠recipient,
           or any if role='Leader'
+
+roadmap_nodes
+  SELECT: current_app_role() IS NOT NULL — any active whitelisted user
+  INSERT/UPDATE/DELETE: current_app_role() = 'Leader'
 
 --------------------------------------------------------------------------------
 ROUTE STRUCTURE
@@ -143,14 +156,16 @@ ROUTE STRUCTURE
 /my/checklists            Member assigned checklists list — progress + due date
 /my/checklists/[checklistId] Member checklist detail — tick/untick items
 
+/roadmap                  Team skill roadmap — tree view, all roles
+
 --------------------------------------------------------------------------------
 KEY SHARED COMPONENTS
 --------------------------------------------------------------------------------
 
 AppShell (components/AppShell.tsx)
   - Authenticated nav header wrapper used on every page
-  - Leader/Admin nav: Dashboard, Members, Reports, Checklists
-  - Member nav: My Dashboard, My Reports, My Checklists
+  - Leader/Admin nav: Dashboard, Members, Reports, Checklists, Roadmap
+  - Member nav: My Dashboard, My Reports, My Checklists, Roadmap
   - Notifications bell: Badge with unread count, Popover with last 10 entries,
     mark-all-read button. Reloads on route change and on custom DOM event
     'report-tool:notifications-changed'.
@@ -172,7 +187,7 @@ ReportComments (components/ReportComments.tsx)
   - Comment thread: create, inline edit (pencil), delete with confirm modal (trash)
   - Author name resolved from whitelist_users at load time
   - "(edited)" marker shown after update
-  - canEditComment: author_email === own; canDeleteComment: author === own OR role==='Leader'
+  - canEditComment: author_email === own; canDeleteComment: author_email === own
 
 OverdueChecklistsSection (components/dashboard/OverdueChecklistsSection.tsx)
   - Self-contained: queries checklists WHERE due_date < today, then items/
@@ -194,6 +209,19 @@ NeedReviewSection (components/dashboard/NeedReviewSection.tsx)
   - Members with no report in the past 30 days
   - Leader can open Create Report modal per row
 
+RoadmapTree (components/roadmap/RoadmapTree.tsx)
+  - Renders roadmap_nodes as an interactive React Flow mindmap/canvas
+  - Supports zoom/pan for all roles
+  - Supports node drag for Leader and saves position_x/position_y
+  - Clicking a node selects it on the canvas
+  - Detail icon opens node drawer
+  - Edges are built from parent_id
+
+RoadmapNodeDrawer (components/roadmap/RoadmapNodeDrawer.tsx)
+  - Ant Design Drawer opened from node detail icon.
+  - Leader: edit description and resource_links, then save.
+  - Admin/Member: read-only title, description, resource_links.
+
 --------------------------------------------------------------------------------
 KEY LIB FILES
 --------------------------------------------------------------------------------
@@ -206,7 +234,7 @@ lib/report-helpers.ts
   Select string constants:
     reportSelect, memberSelect, checklistSelect (includes due_date),
     checklistItemSelect, checklistAssignmentSelect, checklistCompletionSelect,
-    reportCommentSelect, notificationSelect
+    reportCommentSelect, notificationSelect, roadmapNodeSelect  [to add]
   canManageReport(role, createdBy, email) → boolean
   encodeMemberId(email) → encodeURIComponent(email)
   getChecklistProgress(items, completions) → 0–100
@@ -230,7 +258,7 @@ app/api/reports/*
 lib/types.ts
   WhitelistUser, ReportLog, ReportLogSummary, ChecklistScope, Checklist,
   ChecklistItem, ChecklistAssignment, ChecklistItemCompletion,
-  ReportComment, Notification
+  ReportComment, Notification, RoadmapNode  [to add]
 
 --------------------------------------------------------------------------------
 CODING CONVENTIONS
@@ -276,15 +304,189 @@ CURRENT STATUS — ALL FEATURES IMPLEMENTED
   ✓ Phase 5: Notifications — in-app bell, unread badge, mark-all-read,
              checklist_assigned insert, checklist_overdue auto-insert,
              report_comment insert
+  ✓ Phase 6: Roadmap — roadmap_nodes table + RLS (phase6-roadmap.sql),
+             /roadmap page, RoadmapTree, RoadmapNodeDrawer,
+             RoadmapNodeFormModal, Leader CRUD, Admin/Member read-only,
+             Roadmap nav item in AppShell for all roles
   ✓ AppShell: nav, notifications bell, avatar user dropdown
   ✓ AppBackButton: smart back navigation
   ✓ Member dashboard (/my/dashboard): metrics + overdue checklists section
   ✓ My Reports (/my/reports): overdue checklists section at top
 
 --------------------------------------------------------------------------------
-DEPLOYMENT
+PHASE 6 — ROADMAP
 --------------------------------------------------------------------------------
-  Fresh install or upgrade: run phase1 → phase2 → phase3 → phase4 → phase5
+Goal: shared learning/skill roadmap for the whole FE team displayed as an interactive mindmap.
+      All active whitelisted users view. Leader creates/edits/deletes nodes.
+
+--- 6.1  SQL: create supabase/phase6-roadmap.sql ---
+
+  Table: roadmap_nodes
+    id uuid primary key default gen_random_uuid()
+    title text not null
+    description text
+    resource_links text[]          -- array of URLs, nullable
+    parent_id uuid references roadmap_nodes(id) on delete cascade
+    sort_order integer not null default 0
+    position_x integer             -- canvas x-position, nullable for old rows
+    position_y integer             -- canvas y-position, nullable for old rows
+    created_by text not null       -- email of the Leader who created it
+    created_at timestamptz default now()
+    updated_at timestamptz default now()
+
+  Index:
+    CREATE INDEX IF NOT EXISTS roadmap_nodes_parent_sort_idx
+      ON roadmap_nodes (parent_id, sort_order ASC);
+
+  RLS:
+    Enable RLS on roadmap_nodes.
+    SELECT policy: current_app_role() IS NOT NULL
+      (any active whitelisted user — Leader, Admin, Member)
+    INSERT policy: current_app_role() = 'Leader'
+      AND created_by = auth.jwt()->>'email'
+    UPDATE policy: current_app_role() = 'Leader'
+      AND created_by = auth.jwt()->>'email'
+    DELETE policy: current_app_role() = 'Leader'
+      AND created_by = auth.jwt()->>'email'
+
+  File: supabase/phase6-roadmap.sql
+
+--- 6.2  Types: add RoadmapNode to lib/types.ts ---
+
+  export type RoadmapNode = {
+    id: string;
+    title: string;
+    description: string | null;
+    resource_links: string[] | null;
+    parent_id: string | null;
+    sort_order: number;
+    position_x: number | null;
+    position_y: number | null;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+  };
+
+  File: lib/types.ts
+
+--- 6.3  Select string: add to lib/report-helpers.ts ---
+
+  export const roadmapNodeSelect =
+    'id,title,description,resource_links,parent_id,sort_order,position_x,position_y,created_by,created_at,updated_at';
+
+  File: lib/report-helpers.ts
+
+--- 6.4  Component: RoadmapNodeDrawer ---
+
+  File: components/roadmap/RoadmapNodeDrawer.tsx
+  Props: { node: RoadmapNode | null; onClose: () => void }
+  Behavior:
+    - Ant Design Drawer, open when node != null
+    - Shows title (heading), description (paragraph), resource_links as <a> list
+    - No editing inside drawer (view-only)
+
+--- 6.5  Component: RoadmapNodeFormModal ---
+
+  File: components/roadmap/RoadmapNodeFormModal.tsx
+  Props: { open, node?: RoadmapNode | null, parentId?: string | null,
+           onSave, onCancel, saving }
+  Behavior:
+    - Ant Design Modal (create or edit)
+    - Form fields: title (required), description (TextArea), resource_links
+      (dynamic list of Input, add/remove like checklist items),
+      sort_order (InputNumber)
+    - parentId passed in; user does not select parent in this form
+  Leader-only: rendered only when currentUser.role === 'Leader'
+
+--- 6.6  Component: RoadmapTree ---
+
+  File: components/roadmap/RoadmapTree.tsx
+  Props: { nodes: RoadmapNode[]; canEdit: boolean;
+           onNodeClick: (node: RoadmapNode) => void;
+           onAddChild: (parentId: string | null) => void;
+           onEditNode: (node: RoadmapNode) => void;
+           onDeleteNode: (node: RoadmapNode) => void; }
+  Behavior:
+    - Build React Flow nodes and edges from roadmap_nodes.
+    - Use parent_id to render smoothstep edges.
+    - Use position_x/position_y if present; otherwise compute a fallback layout.
+    - Each node shows title + (if canEdit) icon buttons for Add Child, Rename, Delete.
+    - Add Child creates a node immediately near the parent.
+    - Rename edits the title inline inside the node.
+    - Clicking the node title selects the node.
+    - Double-clicking the node title starts inline rename for Leader.
+    - Detail icon opens drawer for description/resources management.
+    - Leader can drag nodes; drag stop saves position_x/position_y.
+    - Empty state: show Ant Design Empty when nodes.length === 0.
+
+--- 6.7  Page: /roadmap ---
+
+  File: app/roadmap/page.tsx
+  Access: all roles (Leader, Admin, Member) — gate with getCurrentProfile()
+  State:
+    currentUser, nodes: RoadmapNode[], loading, error,
+    drawerNode: RoadmapNode | null,
+    deletingId: string | null
+  Data loading:
+    - getCurrentProfile() + supabase.from('roadmap_nodes').select(roadmapNodeSelect)
+      .order('sort_order', ascending)
+    - Follow deferred useEffect pattern.
+  canEdit: currentUser?.role === 'Leader'
+  Actions (Leader only):
+    - Add root node: creates a new root node directly.
+    - Add child: creates a new child node directly near the parent.
+    - Rename node: inline title edit, then Supabase update.
+    - Delete node: confirm, then supabase delete; cascades children in DB
+    - Save (create): supabase INSERT { title, description, resource_links,
+      parent_id, sort_order, position_x, position_y, created_by: currentUser.email }
+    - Save (update): supabase UPDATE { title, description, resource_links,
+      sort_order, updated_at } WHERE id = editingNode.id
+    - Move node: supabase UPDATE { position_x, position_y, updated_at }
+    - After save/delete: reload nodes from Supabase (local state update).
+  Layout:
+    - AppShell wrapper
+    - Card with title 'Roadmap' + (Leader) 'Add root node' Button extra
+    - RoadmapTree inside card
+    - RoadmapNodeDrawer
+
+--- 6.8  AppShell: add Roadmap nav item ---
+
+  File: components/AppShell.tsx
+  Change: add isRoadmap = pathname.startsWith('/roadmap')
+  Add nav Link to '/roadmap' with label 'Roadmap' for all roles.
+  Position: after Checklists in Leader/Admin nav; after My Checklists in Member nav.
+
+--------------------------------------------------------------------------------
+VERIFICATION (Phase 6)
+--------------------------------------------------------------------------------
+  - Run phase6-roadmap.sql in Supabase SQL Editor.
+  - Leader can create a root node; it appears in the mindmap.
+  - Leader can add a child node under an existing node.
+  - Leader can edit node title, description, resource_links.
+  - Leader can delete a node; children cascade-delete.
+  - Leader can drag a node and its position persists after reload.
+  - Admin can view and zoom/pan the mindmap but Add/Edit/Delete/drag are disabled.
+  - Member can view and zoom/pan the mindmap but Add/Edit/Delete/drag are disabled.
+  - Clicking any node opens the drawer with correct data.
+  - Resource links in drawer are clickable external URLs.
+  - Roadmap nav item is active-highlighted on /roadmap.
+  - pnpm lint and tsc --noEmit pass with no errors.
+
+--------------------------------------------------------------------------------
+RISKS / BLOCKERS (Phase 6)
+--------------------------------------------------------------------------------
+  - React Flow node action buttons must stop click propagation to avoid opening
+    the drawer when clicking Add/Edit/Delete.
+  - resource_links is text[]. Supabase returns null for empty array columns;
+    guard with ?? [] before rendering.
+  - Self-referencing parent_id FK: Supabase RLS on DELETE cascades children
+    automatically via ON DELETE CASCADE; no extra app logic needed.
+  - sort_order is manual (InputNumber field). No drag-and-drop in MVP.
+    Ties in sort_order are resolved by insertion order.
+  - Deleting a parent with many deep children cascades silently;
+    add a confirmation message that mentions 'and all children'.
+--------------------------------------------------------------------------------
+  Fresh install or upgrade: run phase1 → phase2 → phase3 → phase4 → phase5 → phase6
   in Supabase SQL Editor. phase3.sql includes due_date backfill and NOT NULL.
 
   Required env vars:

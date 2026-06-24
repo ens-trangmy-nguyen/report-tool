@@ -52,6 +52,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
   const isMembers = pathname.startsWith("/members");
   const isMyReports = pathname.startsWith("/my/reports");
   const isReports = pathname.startsWith("/reports");
+  const isRoadmap = pathname.startsWith("/roadmap");
   const canViewTeam =
     currentUser?.role === "Leader" || currentUser?.role === "Admin";
   const activeNavClass =
@@ -312,6 +313,14 @@ export function AppShell({ children, currentUser }: AppShellProps) {
                   className={isChecklists ? activeNavClass : inactiveNavClass}
                 >
                   Checklists
+                </Button>
+              </Link>
+              <Link href="/roadmap">
+                <Button
+                  type="text"
+                  className={isRoadmap ? activeNavClass : inactiveNavClass}
+                >
+                  Roadmap
                 </Button>
               </Link>
               <Popover

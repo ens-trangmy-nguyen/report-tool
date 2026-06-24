@@ -444,6 +444,408 @@ body {
   padding: 16px;
 }
 
+.roadmap-mindmap {
+  background:
+    linear-gradient(#f8fafc 1px, transparent 1px),
+    linear-gradient(90deg, #f8fafc 1px, transparent 1px),
+    #ffffff;
+  background-size: 32px 32px;
+  border: 1px solid #e6eaf2;
+  border-radius: 8px;
+  min-height: 420px;
+  overflow-x: auto;
+  padding: 40px 32px;
+}
+
+.roadmap-mindmap-section {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(320px, 1fr) auto minmax(320px, 1fr);
+  min-width: 980px;
+  padding: 24px 0;
+}
+
+.roadmap-mindmap-section + .roadmap-mindmap-section {
+  border-top: 1px solid #eef2f7;
+  margin-top: 28px;
+  padding-top: 52px;
+}
+
+.roadmap-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.roadmap-side-left {
+  align-items: flex-end;
+}
+
+.roadmap-side-right {
+  align-items: flex-start;
+}
+
+.roadmap-branch {
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.roadmap-branch-left {
+  flex-direction: row-reverse;
+}
+
+.roadmap-branch-right {
+  flex-direction: row;
+}
+
+.roadmap-branch-line {
+  background: #94a3b8;
+  flex: 0 0 34px;
+  height: 2px;
+  opacity: 0.55;
+}
+
+.roadmap-subbranches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.roadmap-branch-right > .roadmap-subbranches {
+  margin-left: 16px;
+  padding-left: 16px;
+}
+
+.roadmap-branch-left > .roadmap-subbranches {
+  margin-right: 16px;
+  padding-right: 16px;
+}
+
+.roadmap-branch-right > .roadmap-subbranches::before,
+.roadmap-branch-left > .roadmap-subbranches::before {
+  background: #94a3b8;
+  bottom: 18px;
+  content: "";
+  opacity: 0.45;
+  position: absolute;
+  top: 18px;
+  width: 2px;
+}
+
+.roadmap-branch-right > .roadmap-subbranches::before {
+  left: 0;
+}
+
+.roadmap-branch-left > .roadmap-subbranches::before {
+  right: 0;
+}
+
+.roadmap-node-pill {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  color: #172033;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 10px;
+  justify-content: center;
+  max-width: 260px;
+  min-height: 42px;
+  min-width: 148px;
+  padding: 9px 13px 9px 16px;
+  position: relative;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  white-space: normal;
+  z-index: 1;
+}
+
+.roadmap-node-pill:hover,
+.roadmap-node-pill:focus-visible {
+  border-color: #3f73ff;
+  box-shadow: 0 12px 26px rgba(63, 115, 255, 0.16);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.roadmap-node-pill-root {
+  background: linear-gradient(135deg, #3f73ff, #6f93ff);
+  border-color: #7da0ff;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  min-height: 58px;
+  min-width: 190px;
+  padding: 14px 18px;
+  text-align: center;
+}
+
+.roadmap-node-text {
+  display: -webkit-box;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.roadmap-node-pill-root .roadmap-node-text {
+  font-size: 16px;
+}
+
+.roadmap-node-actions {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 1px;
+  padding: 1px;
+}
+
+.roadmap-node-actions .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.roadmap-node-pill-root .roadmap-node-actions {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.roadmap-node-pill-root .roadmap-node-actions .ant-btn {
+  color: #ffffff;
+}
+
+.roadmap-flow-shell {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.35) 1px, transparent 0),
+    linear-gradient(135deg, rgba(239, 246, 255, 0.8), rgba(240, 253, 250, 0.55));
+  background-size: 24px 24px, auto;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  height: 640px;
+  overflow: hidden;
+  position: relative;
+}
+
+.roadmap-flow-empty {
+  min-height: 360px;
+  position: relative;
+}
+
+.roadmap-flow-shell .roadmap-add-root-button.ant-btn,
+.roadmap-flow-empty .roadmap-add-root-button.ant-btn {
+  bottom: 28px !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.22);
+  left: auto !important;
+  position: fixed !important;
+  right: 28px !important;
+  top: auto !important;
+  z-index: 30;
+}
+
+.roadmap-flow-shell .react-flow__node-default {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto;
+}
+
+.roadmap-flow-shell .react-flow__node,
+.roadmap-flow-shell .react-flow__node-default.selected,
+.roadmap-flow-shell .react-flow__node-default:focus,
+.roadmap-flow-shell .react-flow__node-default:focus-visible {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.roadmap-flow-shell .react-flow__resize-control {
+  display: none;
+}
+
+.roadmap-flow-shell .react-flow__handle {
+  background: transparent;
+  border: 0;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+}
+
+.roadmap-flow-node-content {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  display: inline-flex;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 170px;
+  max-width: 290px;
+  padding: 8px 10px 8px 18px;
+}
+
+.roadmap-flow-root .roadmap-flow-node-content {
+  background: linear-gradient(135deg, #3f73ff, #6f93ff);
+  border-color: #7da0ff;
+  box-shadow: 0 18px 34px rgba(63, 115, 255, 0.25);
+  min-height: 62px;
+  min-width: 220px;
+}
+
+.roadmap-flow-selected .roadmap-flow-node-content {
+  border-color: #8b5cf6;
+  box-shadow:
+    0 0 0 4px rgba(139, 92, 246, 0.14),
+    0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.roadmap-flow-node-title {
+  background: transparent;
+  border: 0;
+  color: #172033;
+  cursor: pointer;
+  display: -webkit-box;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.roadmap-flow-title-input {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 800;
+  min-width: 150px;
+  outline: none;
+  padding: 5px 10px;
+}
+
+.roadmap-flow-root .roadmap-flow-title-input {
+  font-size: 16px;
+  text-align: center;
+}
+
+.roadmap-flow-root .roadmap-flow-node-title {
+  color: #ffffff;
+  font-size: 16px;
+  text-align: center;
+}
+
+.roadmap-flow-node-actions {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 1px;
+  padding: 1px;
+}
+
+.roadmap-flow-detail-button.ant-btn {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.roadmap-flow-root .roadmap-flow-node-actions {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.roadmap-flow-node-actions .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.roadmap-flow-root .roadmap-flow-node-actions .ant-btn {
+  color: #ffffff;
+}
+
+.roadmap-flow-shell .react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+.roadmap-flow-shell .react-flow__controls {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.roadmap-flow-shell .react-flow__minimap {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .roadmap-mindmap {
+    padding: 24px 18px;
+  }
+
+  .roadmap-mindmap-section {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .roadmap-side,
+  .roadmap-side-left,
+  .roadmap-side-right {
+    align-items: flex-start;
+  }
+
+  .roadmap-branch,
+  .roadmap-branch-left {
+    flex-direction: row;
+  }
+
+  .roadmap-node-pill {
+    max-width: 100%;
+  }
+
+  .roadmap-flow-shell {
+    height: 560px;
+  }
+}
+
 .overdue-checklist-table .ant-table-tbody > tr > td {
   background: #fffaf4;
   padding-bottom: 18px;
