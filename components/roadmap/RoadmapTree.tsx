@@ -272,7 +272,7 @@ export function RoadmapTree({
         target: node.id,
         type: "smoothstep",
         animated: false,
-        style: { stroke: "#8b5cf6", strokeWidth: 2 },
+        style: { stroke: "#8b5cf6", strokeWidth: 3 },
       }));
 
     return {

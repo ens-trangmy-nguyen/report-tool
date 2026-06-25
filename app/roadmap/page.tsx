@@ -14,6 +14,8 @@ import { supabase } from "@/lib/supabase";
 import type { RoadmapNode, WhitelistUser } from "@/lib/types";
 
 const { Title } = Typography;
+const ROADMAP_NODE_SAFE_WIDTH = 380;
+const ROADMAP_NODE_SAFE_HEIGHT = 150;
 
 function getDescendantIds(allNodes: RoadmapNode[], parentId: string): Set<string> {
   const result = new Set<string>();
@@ -31,6 +33,52 @@ function getNodePosition(node?: RoadmapNode) {
     x: node?.position_x ?? 0,
     y: node?.position_y ?? 0,
   };
+}
+
+function positionsOverlap(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  return (
+    Math.abs(a.x - b.x) < ROADMAP_NODE_SAFE_WIDTH &&
+    Math.abs(a.y - b.y) < ROADMAP_NODE_SAFE_HEIGHT
+  );
+}
+
+function findAvailablePosition(
+  preferredPosition: { x: number; y: number },
+  existingNodes: RoadmapNode[],
+) {
+  const occupiedPositions = existingNodes.map(getNodePosition);
+
+  if (!occupiedPositions.some((position) => positionsOverlap(position, preferredPosition))) {
+    return preferredPosition;
+  }
+
+  const candidates = Array.from({ length: 20 }, (_, index) => {
+    const step = index + 1;
+    const direction = step % 2 === 0 ? 1 : -1;
+    return {
+      x: preferredPosition.x + Math.ceil(step / 2) * 90 * direction,
+      y: preferredPosition.y + step * 90,
+    };
+  });
+
+  return (
+    candidates.find(
+      (candidate) =>
+        !occupiedPositions.some((position) => positionsOverlap(position, candidate)),
+    ) ?? {
+      x: preferredPosition.x,
+      y: preferredPosition.y + existingNodes.length * ROADMAP_NODE_SAFE_HEIGHT,
+    }
+  );
+}
+
+function normalizeRichText(value?: string) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed === "<p></p>") return null;
+  return trimmed;
 }
 
 export default function RoadmapPage() {
@@ -95,7 +143,7 @@ export default function RoadmapPage() {
     const parentPosition = getNodePosition(parent);
     const side = siblings.length % 2 === 0 ? 1 : -1;
     const depthOffset = Math.ceil((siblings.length + 1) / 2) - 1;
-    const position = parentId
+    const preferredPosition = parentId
       ? {
           x: parentPosition.x + side * 320,
           y: parentPosition.y + depthOffset * 120,
@@ -104,6 +152,7 @@ export default function RoadmapPage() {
           x: 0,
           y: nodes.filter((n) => !n.parent_id).length * 220,
         };
+    const position = findAvailablePosition(preferredPosition, nodes);
 
     const { data: inserted, error: insertError } = await supabase
       .from("roadmap_nodes")
@@ -179,10 +228,7 @@ export default function RoadmapPage() {
     if (updateError) {
       setError(updateError.message);
       await loadData();
-      return;
     }
-
-    setDrawerNode(null);
   }
 
   async function saveNodeTitle(nodeId: string, title: string) {
@@ -218,7 +264,7 @@ export default function RoadmapPage() {
       .map((item) => item.url.trim())
       .filter(Boolean);
     const patch = {
-      description: values.description?.trim() || null,
+      description: normalizeRichText(values.description),
       resource_links: resourceLinks.length ? resourceLinks : null,
       updated_at: updatedAt,
     };
@@ -241,7 +287,10 @@ export default function RoadmapPage() {
     if (updateError) {
       setError(updateError.message);
       await loadData();
+      return;
     }
+
+    setDrawerNode(null);
   }
 
   return (

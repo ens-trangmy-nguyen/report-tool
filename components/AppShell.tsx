@@ -53,6 +53,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
   const isMyReports = pathname.startsWith("/my/reports");
   const isReports = pathname.startsWith("/reports");
   const isRoadmap = pathname.startsWith("/roadmap");
+  const contentWidthClass = isRoadmap ? "max-w-[calc(100vw-48px)]" : "max-w-6xl";
   const canViewTeam =
     currentUser?.role === "Leader" || currentUser?.role === "Admin";
   const activeNavClass =
@@ -357,7 +358,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
           ) : null}
         </Header>
 
-        <Content className="app-content mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
+        <Content className={`app-content mx-auto w-full ${contentWidthClass} px-4 pb-8 sm:px-6`}>
           {children}
         </Content>
       </Layout>

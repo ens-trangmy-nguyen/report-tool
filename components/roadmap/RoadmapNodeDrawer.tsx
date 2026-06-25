@@ -1,12 +1,12 @@
 "use client";
 
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Drawer, Form, Input, Space, Typography } from "antd";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { RoadmapDescriptionEditor } from "@/components/roadmap/RoadmapDescriptionEditor";
 import type { RoadmapNode } from "@/lib/types";
 
-const { Paragraph, Text } = Typography;
-const { TextArea } = Input;
+const { Text } = Typography;
 
 export type RoadmapNodeDetailValues = {
   description?: string;
@@ -28,30 +28,25 @@ export function RoadmapNodeDrawer({
   onSave,
   saving,
 }: Props) {
-  const [form] = Form.useForm<RoadmapNodeDetailValues>();
+  const [mounted, setMounted] = useState(false);
+  const formId = node ? `roadmap-node-detail-form-${node.id}` : undefined;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (node) {
-        form.setFieldsValue({
-          description: node.description ?? "",
-          resource_links: node.resource_links?.map((url) => ({ url })) ?? [],
-        });
-      } else {
-        form.resetFields();
-      }
-    }, 0);
+    const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
-  }, [form, node]);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <Drawer
       extra={
         canEdit && node ? (
           <Button
+            form={formId}
+            htmlType="submit"
             loading={saving}
             type="primary"
-            onClick={() => form.submit()}
           >
             Save
           </Button>
@@ -65,15 +60,17 @@ export function RoadmapNodeDrawer({
       {node ? (
         canEdit ? (
           <Form
-            form={form}
+            id={formId}
+            key={node.id}
+            initialValues={{
+              description: node.description ?? "",
+              resource_links: node.resource_links?.map((url) => ({ url })) ?? [],
+            }}
             layout="vertical"
             onFinish={(values) => onSave(node.id, values)}
           >
             <Form.Item label="Description" name="description">
-              <TextArea
-                placeholder="What should the team learn or know in this topic?"
-                rows={5}
-              />
+              <RoadmapDescriptionEditor />
             </Form.Item>
 
             <Form.List name="resource_links">
@@ -83,25 +80,35 @@ export function RoadmapNodeDrawer({
                     Resource links
                   </div>
                   <Space orientation="vertical" size="small" className="w-full">
-                    {fields.map((field) => (
-                      <Space key={field.key} align="baseline" className="w-full">
-                        <Form.Item
-                          {...field}
-                          className="mb-0 flex-1"
-                          name={[field.name, "url"]}
-                          rules={[{ message: "Enter a URL", required: true }]}
+                    {fields.map((field) => {
+                      const { key, ...fieldProps } = field;
+
+                      return (
+                        <div
+                          key={key}
+                          className="roadmap-resource-link-row"
+                          style={{ alignItems: "center", display: "flex", gap: 8 }}
                         >
-                          <Input placeholder="https://..." />
-                        </Form.Item>
-                        <Button
-                          aria-label="Remove link"
-                          danger
-                          icon={<MinusCircleOutlined />}
-                          type="text"
-                          onClick={() => remove(field.name)}
-                        />
-                      </Space>
-                    ))}
+                          <Form.Item
+                            {...fieldProps}
+                            className="mb-0 flex-1"
+                            name={[field.name, "url"]}
+                            rules={[{ message: "Enter a URL", required: true }]}
+                            style={{ flex: 1, marginBottom: 0, minWidth: 0 }}
+                          >
+                            <Input placeholder="https://..." />
+                          </Form.Item>
+                          <Button
+                            aria-label="Remove link"
+                            danger
+                            icon={<DeleteOutlined />}
+                            style={{ flex: "0 0 auto" }}
+                            type="text"
+                            onClick={() => remove(field.name)}
+                          />
+                        </div>
+                      );
+                    })}
                     <Button
                       icon={<PlusOutlined />}
                       type="dashed"
@@ -121,7 +128,10 @@ export function RoadmapNodeDrawer({
                 <Text strong className="mb-1 block">
                   Description
                 </Text>
-                <Paragraph className="mb-0">{node.description}</Paragraph>
+                <div
+                  className="roadmap-rich-content"
+                  dangerouslySetInnerHTML={{ __html: node.description }}
+                />
               </div>
             ) : null}
 

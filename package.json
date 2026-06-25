@@ -13,6 +13,9 @@
   "dependencies": {
     "@ant-design/icons": "^6.2.5",
     "@supabase/supabase-js": "^2.108.1",
+    "@tiptap/extension-link": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "@xyflow/react": "^12.11.1",
     "antd": "^6.4.3",
     "dayjs": "^1.11.21",
