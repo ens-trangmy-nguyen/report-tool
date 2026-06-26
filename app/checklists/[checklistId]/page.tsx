@@ -5,7 +5,7 @@ import { Alert, Button, Card, Checkbox, DatePicker, Form, Input, Modal, Popconfi
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppBackButton } from "@/components/AppBackButton";
@@ -18,6 +18,7 @@ const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 export default function ChecklistDetailPage() {
+  const router = useRouter();
   const params = useParams<{ checklistId: string }>();
   const checklistId = params.checklistId;
   const [form] = Form.useForm<{ description?: string; due_date: Dayjs; title: string }>();
@@ -48,6 +49,10 @@ export default function ChecklistDetailPage() {
 
     const profileResult = await getCurrentProfile();
     setCurrentUser(profileResult.profile);
+    if (!profileResult.session?.user.email) {
+      router.replace("/");
+      return;
+    }
     if (profileResult.error || !profileResult.profile) {
       setError(profileResult.error || "Cannot load current user.");
       setLoading(false);
@@ -97,7 +102,7 @@ export default function ChecklistDetailPage() {
       });
     }
     setLoading(false);
-  }, [checklistId, form]);
+  }, [checklistId, form, router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Card, Checkbox, Progress, Space, Spin, Typography } from "antd";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppBackButton } from "@/components/AppBackButton";
@@ -23,6 +23,7 @@ import type {
 const { Text, Title } = Typography;
 
 export default function MyChecklistDetailPage() {
+  const router = useRouter();
   const params = useParams<{ checklistId: string }>();
   const checklistId = params.checklistId;
   const [currentUser, setCurrentUser] = useState<WhitelistUser | null>(null);
@@ -40,6 +41,10 @@ export default function MyChecklistDetailPage() {
 
     const profileResult = await getCurrentProfile();
     setCurrentUser(profileResult.profile);
+    if (!profileResult.session?.user.email) {
+      router.replace("/");
+      return;
+    }
     if (profileResult.error || !profileResult.profile) {
       setError(profileResult.error || "Cannot load current user.");
       setLoading(false);
@@ -90,7 +95,7 @@ export default function MyChecklistDetailPage() {
     setItems(nextItems);
     setCompletions(nextCompletions);
     setLoading(false);
-  }, [checklistId]);
+  }, [checklistId, router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

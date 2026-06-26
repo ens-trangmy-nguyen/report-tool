@@ -299,7 +299,23 @@ export function RoadmapTree({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setFlowNodes(initialFlowNodes);
+      setFlowNodes((currentNodes) => {
+        const currentNodeById = new Map(
+          currentNodes.map((node) => [node.id, node]),
+        );
+
+        return initialFlowNodes.map((nextNode) => {
+          const currentNode = currentNodeById.get(nextNode.id);
+          if (!currentNode) return nextNode;
+
+          return {
+            ...nextNode,
+            dragging: currentNode.dragging,
+            position: currentNode.position,
+            selected: currentNode.selected,
+          };
+        });
+      });
     }, 0);
     return () => window.clearTimeout(timer);
   }, [initialFlowNodes]);
@@ -310,9 +326,21 @@ export function RoadmapTree({
 
   const handleNodeDragStop: OnNodeDrag = (_, node) => {
     if (!canEdit || !nodeById.has(node.id)) return;
-    onPositionChange(node.id, {
+    const nextPosition = {
       x: Math.round(node.position.x),
       y: Math.round(node.position.y),
+    };
+
+    setFlowNodes((currentNodes) =>
+      currentNodes.map((currentNode) =>
+        currentNode.id === node.id
+          ? { ...currentNode, position: nextPosition }
+          : currentNode,
+      ),
+    );
+    onPositionChange(node.id, {
+      x: nextPosition.x,
+      y: nextPosition.y,
     });
   };
 

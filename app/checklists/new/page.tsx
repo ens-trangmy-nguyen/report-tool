@@ -29,6 +29,10 @@ export default function NewChecklistPage() {
 
     const profileResult = await getCurrentProfile();
     setCurrentUser(profileResult.profile);
+    if (!profileResult.session?.user.email) {
+      router.replace("/");
+      return;
+    }
     if (profileResult.error || !profileResult.profile) {
       setError(profileResult.error || "Cannot load current user.");
       setLoading(false);
@@ -49,7 +53,7 @@ export default function NewChecklistPage() {
     if (membersError) setError(membersError.message);
     setMembers((data ?? []) as WhitelistUser[]);
     setLoading(false);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

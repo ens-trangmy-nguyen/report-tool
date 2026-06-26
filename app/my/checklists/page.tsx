@@ -16,6 +16,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentProfile } from "@/lib/auth-client";
@@ -43,6 +44,7 @@ type ChecklistRow = Checklist & {
 };
 
 export default function MyChecklistsPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<WhitelistUser | null>(null);
   const [checklists, setChecklists] = useState<ChecklistRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,10 @@ export default function MyChecklistsPage() {
 
     const profileResult = await getCurrentProfile();
     setCurrentUser(profileResult.profile);
+    if (!profileResult.session?.user.email) {
+      router.replace("/");
+      return;
+    }
     if (profileResult.error || !profileResult.profile) {
       setError(profileResult.error || "Cannot load current user.");
       setLoading(false);
@@ -121,7 +127,7 @@ export default function MyChecklistsPage() {
       })),
     );
     setLoading(false);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

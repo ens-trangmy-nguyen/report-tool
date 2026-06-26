@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert, Card, Space, Spin, Typography } from "antd";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -82,6 +83,7 @@ function normalizeRichText(value?: string) {
 }
 
 export default function RoadmapPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<WhitelistUser | null>(null);
   const [nodes, setNodes] = useState<RoadmapNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,11 @@ export default function RoadmapPage() {
 
     const profileResult = await getCurrentProfile();
     setCurrentUser(profileResult.profile);
+
+    if (!profileResult.session?.user.email) {
+      router.replace("/");
+      return;
+    }
 
     if (profileResult.error || !profileResult.profile) {
       setError(profileResult.error || "Cannot load current user.");
@@ -122,7 +129,7 @@ export default function RoadmapPage() {
     }
 
     setLoading(false);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -157,7 +164,6 @@ export default function RoadmapPage() {
     const { data: inserted, error: insertError } = await supabase
       .from("roadmap_nodes")
       .insert({
-        created_by: currentUser.email,
         description: null,
         parent_id: parentId,
         position_x: position.x,
@@ -216,18 +222,22 @@ export default function RoadmapPage() {
       ),
     );
 
-    const { error: updateError } = await supabase
+    const { data: updatedNode, error: updateError } = await supabase
       .from("roadmap_nodes")
       .update({
         position_x: position.x,
         position_y: position.y,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", nodeId);
+      .eq("id", nodeId)
+      .select("id")
+      .maybeSingle();
 
-    if (updateError) {
-      setError(updateError.message);
-      await loadData();
+    if (updateError || !updatedNode) {
+      setError(
+        updateError?.message ||
+          "Cannot update roadmap position. Check Leader update policy for roadmap_nodes.",
+      );
     }
   }
 
@@ -244,13 +254,18 @@ export default function RoadmapPage() {
     );
     setEditingNodeId(null);
 
-    const { error: updateError } = await supabase
+    const { data: updatedNode, error: updateError } = await supabase
       .from("roadmap_nodes")
       .update({ title, updated_at: updatedAt })
-      .eq("id", nodeId);
+      .eq("id", nodeId)
+      .select("id")
+      .maybeSingle();
 
-    if (updateError) {
-      setError(updateError.message);
+    if (updateError || !updatedNode) {
+      setError(
+        updateError?.message ||
+          "Cannot update roadmap title. Check Leader update policy for roadmap_nodes.",
+      );
       await loadData();
     }
   }
@@ -278,14 +293,19 @@ export default function RoadmapPage() {
       current?.id === nodeId ? { ...current, ...patch } : current,
     );
 
-    const { error: updateError } = await supabase
+    const { data: updatedNode, error: updateError } = await supabase
       .from("roadmap_nodes")
       .update(patch)
-      .eq("id", nodeId);
+      .eq("id", nodeId)
+      .select("id")
+      .maybeSingle();
 
     setSavingDetail(false);
-    if (updateError) {
-      setError(updateError.message);
+    if (updateError || !updatedNode) {
+      setError(
+        updateError?.message ||
+          "Cannot update roadmap detail. Check Leader update policy for roadmap_nodes.",
+      );
       await loadData();
       return;
     }

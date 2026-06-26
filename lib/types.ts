@@ -98,7 +98,6 @@ export type RoadmapNode = {
   sort_order: number;
   position_x: number | null;
   position_y: number | null;
-  created_by: string;
   created_at: string;
   updated_at: string;
 };
