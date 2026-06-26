@@ -78,25 +78,29 @@ export function RoadmapNodeFormModal({
                 Resource links
               </div>
               <Space direction="vertical" size="small" className="w-full">
-                {fields.map((field) => (
-                  <Space key={field.key} align="baseline" className="w-full">
-                    <Form.Item
-                      {...field}
-                      className="mb-0 flex-1"
-                      name={[field.name, "url"]}
-                      rules={[{ message: "Enter a URL", required: true }]}
-                    >
-                      <Input className="w-72" placeholder="https://..." />
-                    </Form.Item>
-                    <Button
-                      aria-label="Remove link"
-                      danger
-                      icon={<MinusCircleOutlined />}
-                      type="text"
-                      onClick={() => remove(field.name)}
-                    />
-                  </Space>
-                ))}
+                {fields.map((field) => {
+                  const { key, ...fieldProps } = field;
+
+                  return (
+                    <Space key={key} align="baseline" className="w-full">
+                      <Form.Item
+                        {...fieldProps}
+                        className="mb-0 flex-1"
+                        name={[field.name, "url"]}
+                        rules={[{ message: "Enter a URL", required: true }]}
+                      >
+                        <Input className="w-72" placeholder="https://..." />
+                      </Form.Item>
+                      <Button
+                        aria-label="Remove link"
+                        danger
+                        icon={<MinusCircleOutlined />}
+                        type="text"
+                        onClick={() => remove(field.name)}
+                      />
+                    </Space>
+                  );
+                })}
                 <Button
                   icon={<PlusOutlined />}
                   type="dashed"

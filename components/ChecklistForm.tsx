@@ -123,31 +123,35 @@ export function ChecklistForm({
               <span className="text-red-500">*</span>
               <span>Checklist items</span>
             </div>
-            {fields.map((field) => (
-              <div key={field.key} className="checklist-item-row">
-                <Form.Item
-                  {...field}
-                  className="mb-0 flex-1"
-                  name={[field.name, "title"]}
-                  rules={[{ required: true, message: "Enter item title" }]}
-                >
-                  <Input
-                    placeholder="Checklist item"
-                    ref={(input) => {
-                      itemInputRefs.current.set(field.key, input?.input ?? null);
-                    }}
-                  />
-                </Form.Item>
-                {fields.length > 1 ? (
-                  <Button
-                    aria-label="Remove checklist item"
-                    danger
-                    icon={<MinusCircleOutlined />}
-                    onClick={() => remove(field.name)}
-                  />
-                ) : null}
-              </div>
-            ))}
+            {fields.map((field) => {
+              const { key, ...fieldProps } = field;
+
+              return (
+                <div key={key} className="checklist-item-row">
+                  <Form.Item
+                    {...fieldProps}
+                    className="mb-0 flex-1"
+                    name={[field.name, "title"]}
+                    rules={[{ required: true, message: "Enter item title" }]}
+                  >
+                    <Input
+                      placeholder="Checklist item"
+                      ref={(input) => {
+                        itemInputRefs.current.set(key, input?.input ?? null);
+                      }}
+                    />
+                  </Form.Item>
+                  {fields.length > 1 ? (
+                    <Button
+                      aria-label="Remove checklist item"
+                      danger
+                      icon={<MinusCircleOutlined />}
+                      onClick={() => remove(field.name)}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
             <Button
               icon={<PlusOutlined />}
               onClick={() => {

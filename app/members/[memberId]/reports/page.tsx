@@ -198,15 +198,17 @@ export default function MemberReportsPage() {
 
   async function deleteReport(reportId: string) {
     setError(null);
+    const previousReports = reports;
+    setReports((currentReports) =>
+      currentReports.filter((report) => report.id !== reportId),
+    );
 
     try {
       await deleteReportLog(reportId);
     } catch (deleteError) {
+      setReports(previousReports);
       setError(deleteError instanceof Error ? deleteError.message : "Cannot delete report.");
-      return;
     }
-
-    await loadData();
   }
 
   return (
