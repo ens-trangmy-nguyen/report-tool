@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
@@ -8,6 +8,7 @@ import {
   DatePicker,
   Empty,
   Form,
+  Popconfirm,
   Select,
   Space,
   Spin,
@@ -26,8 +27,9 @@ import {
 } from "@/components/dashboard/CreateReportModal";
 import { canViewTeam, getCurrentProfile } from "@/lib/auth-client";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/date-format";
-import { createReportLog, fetchReports } from "@/lib/report-api";
+import { createReportLog, deleteReportLog, fetchReports } from "@/lib/report-api";
 import {
+  canManageReport,
   encodeMemberId,
   memberSelect,
   tablePagination,
@@ -149,6 +151,21 @@ export default function ReportsPage() {
     await loadData();
   }
 
+  async function deleteReport(reportId: string) {
+    setError(null);
+    const previousReports = reports;
+    setReports((currentReports) =>
+      currentReports.filter((report) => report.id !== reportId),
+    );
+
+    try {
+      await deleteReportLog(reportId);
+    } catch (deleteError) {
+      setReports(previousReports);
+      setError(deleteError instanceof Error ? deleteError.message : "Cannot delete report.");
+    }
+  }
+
   const columns: ColumnsType<ReportLog> = [
     {
       title: "Date",
@@ -199,22 +216,42 @@ export default function ReportsPage() {
     {
       title: "",
       key: "action",
-      width: 100,
+      width: 120,
       render: (_, record) => (
-        <Link
-          href={
-            canViewTeam(currentUser?.role)
-              ? `/members/${encodeMemberId(record.member_email)}/reports/${record.id}`
-              : `/my/reports/${record.id}`
-          }
-        >
-          <Button
-            aria-label="Report detail"
-            className="icon-only-action-button"
-            icon={<EyeOutlined />}
-            type="text"
-          />
-        </Link>
+        <Space size="small">
+          <Link
+            href={
+              canViewTeam(currentUser?.role)
+                ? `/members/${encodeMemberId(record.member_email)}/reports/${record.id}`
+                : `/my/reports/${record.id}`
+            }
+          >
+            <Button
+              aria-label="Report detail"
+              className="icon-only-action-button"
+              icon={<EyeOutlined />}
+              type="text"
+            />
+          </Link>
+          {canManageReport(currentUser?.role, record.created_by, currentUser?.email) ? (
+            <Popconfirm
+              title="Delete this report/log?"
+              description="This action cannot be undone."
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              placement="top"
+              onConfirm={() => deleteReport(record.id)}
+            >
+              <Button
+                aria-label="Delete report"
+                className="icon-only-action-button"
+                danger
+                icon={<DeleteOutlined />}
+                type="text"
+              />
+            </Popconfirm>
+          ) : null}
+        </Space>
       ),
     },
   ];

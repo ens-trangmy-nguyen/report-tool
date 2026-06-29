@@ -140,11 +140,13 @@ ROUTE STRUCTURE
 /members/[memberId]       Member detail + report history (Leader/Admin)
                           [memberId] = encodeURIComponent(email)
 
-/reports                  All reports list (Leader/Admin) — month + member filter
+/reports                  All reports list (Leader/Admin) — month + member filter,
+                          view action, Leader-owned delete action with confirm
 /members/[memberId]/reports/[reportId]
                           Report detail, edit/delete (Leader); read-only (Admin)
 
-/checklists               Checklist management list (Leader/Admin)
+/checklists               Checklist management list (Leader/Admin), view action,
+                          Leader-owned delete action with confirm
 /checklists/new           Create checklist (Leader only)
 /checklists/[checklistId] Checklist detail: edit metadata, manage items/assignments,
                           per-member progress table (Leader/Admin)
@@ -209,6 +211,22 @@ NeedReviewSection (components/dashboard/NeedReviewSection.tsx)
   - Members with no report in the past 30 days
   - Leader can open Create Report modal per row
 
+ReportsPage (app/reports/page.tsx)
+  - Leader/Admin reports list with member + month filters.
+  - View action links to team report detail for Leader/Admin, or my report detail
+    when rendered for a non-team viewer.
+  - Delete action is shown only when canManageReport(role, created_by, email)
+    is true. Uses Popconfirm and deleteReportLog(), then removes the row
+    optimistically and rolls back on API/Supabase error.
+
+ChecklistsPage (app/checklists/page.tsx)
+  - Leader/Admin checklist management list with progress and due-date display.
+  - View action links to checklist detail.
+  - Delete action is shown only to the Leader who created the checklist.
+    Uses Popconfirm and Supabase delete on checklists.id; dependent items,
+    assignments, and completions cascade through DB foreign keys. Row removal is
+    optimistic and rolls back on Supabase error.
+
 RoadmapTree (components/roadmap/RoadmapTree.tsx)
   - Renders roadmap_nodes as an interactive React Flow mindmap/canvas
   - Supports zoom/pan for all roles
@@ -250,6 +268,7 @@ lib/report-encryption.ts
 lib/report-api.ts
   Client helper for authenticated report API calls. Sends Supabase access token
   to server route handlers.
+  deleteReportLog(reportId) calls DELETE /api/reports/[reportId].
 
 app/api/reports/*
   Authenticated report API route handlers. Enforce Supabase RLS using the

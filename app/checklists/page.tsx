@@ -1,11 +1,12 @@
 "use client";
 
-import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EyeOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
   Card,
   Empty,
+  Popconfirm,
   Progress,
   Space,
   Spin,
@@ -148,6 +149,28 @@ export default function ChecklistsPage() {
     return () => window.clearTimeout(timer);
   }, [loadData]);
 
+  const deleteChecklist = useCallback(async (checklistId: string) => {
+    const previousChecklists = checklists;
+    setError(null);
+    setChecklists((currentChecklists) =>
+      currentChecklists.filter((checklist) => checklist.id !== checklistId),
+    );
+
+    const { error: deleteError } = await supabase
+      .from("checklists")
+      .delete()
+      .eq("id", checklistId);
+
+    if (deleteError) {
+      setChecklists(previousChecklists);
+      setError(deleteError.message);
+    }
+  }, [checklists]);
+
+  const canDeleteChecklist = useCallback((checklist: ChecklistRow) => {
+    return currentUser?.role === "Leader" && checklist.created_by === currentUser.email;
+  }, [currentUser]);
+
   const columns: ColumnsType<ChecklistRow> = useMemo(
     () => [
       {
@@ -226,20 +249,40 @@ export default function ChecklistsPage() {
       {
         title: "",
         key: "action",
-        width: 100,
+        width: 120,
         render: (_, record) => (
-          <Link href={`/checklists/${record.id}`}>
-            <Button
-              aria-label="Checklist detail"
-              className="icon-only-action-button"
-              icon={<EyeOutlined />}
-              type="text"
-            />
-          </Link>
+          <Space size="small">
+            <Link href={`/checklists/${record.id}`}>
+              <Button
+                aria-label="Checklist detail"
+                className="icon-only-action-button"
+                icon={<EyeOutlined />}
+                type="text"
+              />
+            </Link>
+            {canDeleteChecklist(record) ? (
+              <Popconfirm
+                title="Delete this checklist?"
+                description="This will also delete its items, assignments, and completions."
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                placement="top"
+                onConfirm={() => deleteChecklist(record.id)}
+              >
+                <Button
+                  aria-label="Delete checklist"
+                  className="icon-only-action-button"
+                  danger
+                  icon={<DeleteOutlined />}
+                  type="text"
+                />
+              </Popconfirm>
+            ) : null}
+          </Space>
         ),
       },
     ],
-    [],
+    [canDeleteChecklist, deleteChecklist],
   );
 
   return (

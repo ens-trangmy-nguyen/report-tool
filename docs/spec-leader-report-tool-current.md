@@ -73,6 +73,7 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 
 - Filterable by month and by member (select).
 - Table: date, member, content summary, created-at, view link.
+- Leaders can delete their own reports directly from the list via a trash action with confirmation. The action is hidden for Admins and for reports created by another user.
 
 ### Report Detail (`/members/[memberId]/reports/[reportId]`, `/my/reports/[reportId]`)
 
@@ -104,6 +105,7 @@ All roles are stored in `whitelist_users.role`. Access is denied unless the auth
 ### Leader Checklist Management (`/checklists`, `/checklists/new`, `/checklists/[checklistId]`)
 
 - **List page**: Shows title, description, scope tag, assigned count, average progress bar, due date with Overdue tag if past due and incomplete.
+- **List delete**: The Leader who created a checklist can delete it directly from the list via a trash action with confirmation. Deleting a checklist cascades to its items, assignments, and completions through database foreign keys.
 - **Create (`/checklists/new`)**: Form with title, description, scope (Team/Personal), due date (required, must be today or future), checklist items (dynamic list), and assignees (shown for Personal scope; Team scope assigns all active Members automatically).
 - **Detail page**: View/edit metadata (title, description, due date), manage items (add/edit/delete), manage assignments (add/remove). Per-member progress table with Progress bar per row.
 - Only the Leader who created the checklist can edit/delete it (`canEdit = role === 'Leader' && created_by === email`).
